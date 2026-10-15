@@ -1,0 +1,21 @@
+{% from "_macros.html" import check %}
+{% set connect = answer.get('connect', []) %}
+{% set gaps = answer.get('gaps', []) %}
+<div class="group">
+  <h2>Sources to connect</h2>
+  <p class="help">Vulnerability scanners produce findings. The CMDB and EDR add context: who owns what, and what exists.</p>
+  <div class="opts">
+  {% for s in scenario.sources %}
+    {{ check('connect', s.id, s.label, s.vendor_note ~ ' · ' ~ ('vulnerability scanner' if s.is_vuln_source else s.kind|upper ~ ' (context)'), s.id in connect) }}
+  {% endfor %}
+  </div>
+</div>
+<div class="group">
+  <h2>Coverage gaps</h2>
+  <p class="help">Which asset groups does <em>no</em> vulnerability scanner cover? Trace the lines on the map. EDR inventory doesn't count as scanning.</p>
+  <div class="opts opts-2">
+  {% for g in scenario.asset_groups %}
+    {{ check('gaps', g.id, g.label, g.count ~ ' · ' ~ g.platform ~ ' · ' ~ scenario.zone(g.zone).label, g.id in gaps) }}
+  {% endfor %}
+  </div>
+</div>

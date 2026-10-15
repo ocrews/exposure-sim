@@ -1,0 +1,74 @@
+{% from "_macros.html" import check %}
+{% set roles_ans = answer.get('roles', {}) %}
+{% set sc = answer.get('scanners', {}) %}
+<div class="group">
+  <h2>1 · The BaseParser contract</h2>
+  <p class="help">For each method, decide: must every subclass write it (abstract), is it written once and inherited (shared), or does it not belong on the base at all?</p>
+  <div class="table-scroll">
+    <table class="grid roles">
+      <thead><tr><th>Method</th>{% for key, label in roles.items() %}<th>{{ key }}</th>{% endfor %}</tr></thead>
+      <tbody>
+      {% for m, desc in base_methods.items() %}
+        <tr>
+          <td><code>{{ m }}()</code><span class="cell-desc">{{ desc }}</span></td>
+          {% for key in roles %}
+          <td><input type="radio" name="role_{{ m }}" value="{{ key }}" aria-label="{{ m }}: {{ roles[key] }}" {% if roles_ans.get(m) == key %}checked{% endif %}></td>
+          {% endfor %}
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+<div class="group">
+  <h2>2 · What parse() returns</h2>
+  <div class="opts">
+  {% for key, label in returns.items() %}{{ check('returns', key, label, '', answer.get('returns') == key, 'radio') }}{% endfor %}
+  </div>
+</div>
+<div class="group">
+  <h2>3 · A shared middle class?</h2>
+  <label class="opt">
+    <input type="checkbox" name="paginated_class" value="yes" {% if answer.get('paginated_class') %}checked{% endif %} data-toggles="paginated">
+    <span class="opt-body"><span class="opt-label"><code>class PaginatedApiParser(BaseParser)</code></span>
+    <span class="opt-desc">Holds the "fetch the next page until there are none" loop for every API that returns results in pages.</span></span>
+  </label>
+</div>
+<div class="group">
+  <h2>4 · One subclass per scanner</h2>
+  <p class="help">Pick each class's parent, then tick only the methods it must override. Everything else is inherited.</p>
+  <div class="scanners">
+  {% for s in scenario.vuln_sources %}
+    {% set pick = sc.get(s.id, {}) %}
+    {% set ovr = pick.get('overrides', []) %}
+    <div class="scanner">
+      <div class="scanner-head">
+        <code class="cls">class {{ class_name(s) }}(</code>
+        <select name="parent_{{ s.id }}" aria-label="Parent class of {{ class_name(s) }}">
+          <option value="base" {% if pick.get('parent', 'base') == 'base' %}selected{% endif %}>BaseParser</option>
+          <option value="paginated" data-needs="paginated" {% if pick.get('parent') == 'paginated' %}selected{% endif %}>PaginatedApiParser</option>
+        </select><code class="cls">)</code>
+      </div>
+      <dl class="traits">
+        <div><dt>Data</dt><dd>{{ s.raw_format }}</dd></div>
+        <div><dt>Delivery</dt><dd>{{ transport_text[s.transport] }}</dd></div>
+        <div><dt>Severity</dt><dd>{{ s.severity_note }}</dd></div>
+      </dl>
+      <div class="ovr">
+        <span class="ovr-label">Overrides</span>
+        {% for m in overridable %}
+        <label class="chip"><input type="checkbox" name="ovr_{{ s.id }}" value="{{ m }}" {% if m in ovr %}checked{% endif %}><code>{{ m }}()</code></label>
+        {% endfor %}
+      </div>
+    </div>
+  {% endfor %}
+  </div>
+</div>
+{% if code %}
+<div class="group">
+  <h2>Your design as Python</h2>
+  <p class="help">Generated from your choices. Lines marked <code>REVIEW</code> point at weak spots.</p>
+  <pre class="code" tabindex="0">{% for line in code.splitlines() %}{% if 'REVIEW' in line %}<span class="rv">{{ line }}</span>{% elif line.strip().startswith('#') %}<span class="cm">{{ line }}</span>{% else %}{{ line }}{% endif %}
+{% endfor %}</pre>
+</div>
+{% endif %}

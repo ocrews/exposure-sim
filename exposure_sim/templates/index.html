@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="intro">
+  <p class="eyebrow">Implementation engineer simulator</p>
+  <h1>Walk into a customer's network. Make the platform fit.</h1>
+  <p class="lead">Each org has its own scanners, ticketing, and constraints. You connect the sources, pick where the platform runs, scope wave 1, set risk and ticket rules, and design the parser classes. Every answer is graded, and weak ones get a question before you lock them in.</p>
+</section>
+<ol class="cards">
+  {% for c in cards %}
+  <li class="card">
+    <p class="eyebrow">{{ loop.index }} · {{ c.s.difficulty }}</p>
+    <h2>{{ c.s.name }}</h2>
+    <p>{{ c.s.tagline }}</p>
+    <dl class="facts">
+      <div><dt>Scanners</dt><dd>{{ c.s.vuln_sources|length }}</dd></div>
+      <div><dt>Asset groups</dt><dd>{{ c.s.asset_groups|length }}</dd></div>
+      <div><dt>Progress</dt><dd>{{ c.done }}/{{ stage_count }}{% if c.pct is not none %} · {{ c.pct }}%{% endif %}</dd></div>
+    </dl>
+    <div class="actions">
+      <a class="btn btn-primary" href="{{ url_for('game.play', sid=c.s.id) }}">{{ 'Continue' if c.done else 'Start' }}</a>
+      {% if c.done %}
+      <form method="post" action="{{ url_for('game.reset', sid=c.s.id) }}"><button class="btn" type="submit">Start over</button></form>
+      {% endif %}
+    </div>
+  </li>
+  {% endfor %}
+</ol>
+<p class="foot">All organizations, people, hosts, and data are fictional.</p>
+{% endblock %}

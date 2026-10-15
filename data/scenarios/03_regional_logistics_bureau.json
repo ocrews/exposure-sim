@@ -1,0 +1,255 @@
+{
+  "schema_version": 1,
+  "id": "regional-bureau",
+  "name": "Bureau of Regional Logistics",
+  "difficulty": "Federal-style",
+  "tagline": "Fictional agency. Everything stays inside the authorization boundary.",
+  "briefing": [
+    "The Bureau runs a public case-management portal, an OpenShift platform for internal apps, and 900 Windows workstations.",
+    "Its vulnerability data is treated as controlled unclassified information. The ATO boundary does not include any SaaS vulnerability platform, and the management VLAN has no internet egress.",
+    "Tenable SC scans servers and workstations. Red Hat Advanced Cluster Security (ACS) scans OpenShift images and workloads. SonarQube scans the agency's GitLab repos.",
+    "The CMDB is stale: the HR database is missing from it entirely. Field offices run OT sensors that nobody scans. Dev and platform teams work in Jira Data Center. Operations teams work in the on-prem ITSM tool."
+  ],
+  "constraints": {
+    "data_must_stay_onprem": true,
+    "reason": "Vulnerability data may not leave the ATO boundary, and the mgmt VLAN has no internet egress."
+  },
+  "zones": [
+    {
+      "id": "saas",
+      "label": "Internet (outside ATO boundary)",
+      "kind": "saas"
+    },
+    {
+      "id": "dmz",
+      "label": "Public DMZ",
+      "kind": "dmz"
+    },
+    {
+      "id": "enterprise",
+      "label": "Enterprise server VLAN",
+      "kind": "servers"
+    },
+    {
+      "id": "ocp",
+      "label": "OpenShift cluster",
+      "kind": "cluster"
+    },
+    {
+      "id": "users",
+      "label": "Workstation VLAN",
+      "kind": "office"
+    },
+    {
+      "id": "field",
+      "label": "Field office OT",
+      "kind": "ot"
+    },
+    {
+      "id": "mgmt",
+      "label": "Mgmt VLAN · no egress",
+      "kind": "mgmt"
+    }
+  ],
+  "collector_zone": "mgmt",
+  "asset_groups": [
+    {
+      "id": "portal",
+      "label": "Case mgmt portal",
+      "zone": "dmz",
+      "count": 14,
+      "platform": "linux",
+      "criticality": "critical",
+      "internet_facing": true,
+      "owner": "App-Ops"
+    },
+    {
+      "id": "ad",
+      "label": "AD forest",
+      "zone": "enterprise",
+      "count": 6,
+      "platform": "windows",
+      "criticality": "critical",
+      "internet_facing": false,
+      "owner": "Identity"
+    },
+    {
+      "id": "hrdb",
+      "label": "HR database",
+      "zone": "enterprise",
+      "count": 4,
+      "platform": "linux",
+      "criticality": "critical",
+      "internet_facing": false,
+      "owner": null,
+      "note": "Missing from the CMDB."
+    },
+    {
+      "id": "repos",
+      "label": "GitLab repos",
+      "zone": "enterprise",
+      "count": 55,
+      "platform": "repo",
+      "criticality": "medium",
+      "internet_facing": false,
+      "owner": "Dev-Team"
+    },
+    {
+      "id": "ocp-apps",
+      "label": "OpenShift workloads",
+      "zone": "ocp",
+      "count": 40,
+      "platform": "container",
+      "criticality": "high",
+      "internet_facing": false,
+      "owner": "Platform-Team"
+    },
+    {
+      "id": "ws",
+      "label": "Workstations",
+      "zone": "users",
+      "count": 900,
+      "platform": "windows",
+      "criticality": "low",
+      "internet_facing": false,
+      "owner": "Desktop-Support"
+    },
+    {
+      "id": "ot",
+      "label": "OT sensors",
+      "zone": "field",
+      "count": 40,
+      "platform": "ot",
+      "criticality": "medium",
+      "internet_facing": false,
+      "owner": "Facilities",
+      "note": "Fragile. Active scans can crash them."
+    }
+  ],
+  "sources": [
+    {
+      "id": "tenable",
+      "label": "Tenable SC",
+      "vendor_note": "On-prem infra scanner",
+      "kind": "infra",
+      "zone": "mgmt",
+      "api_location": "onprem",
+      "covers": [
+        "portal",
+        "ad",
+        "hrdb",
+        "ws"
+      ],
+      "transport": "api_paginated",
+      "severity": "native",
+      "severity_note": "Native 0–4 severity",
+      "raw_format": "REST JSON, start/end offsets"
+    },
+    {
+      "id": "acs",
+      "label": "Red Hat ACS",
+      "vendor_note": "Containers & K8s",
+      "kind": "container",
+      "zone": "ocp",
+      "api_location": "onprem",
+      "covers": [
+        "ocp-apps"
+      ],
+      "transport": "api_paginated",
+      "severity": "labels",
+      "severity_note": "CRITICAL/IMPORTANT/MODERATE/LOW labels",
+      "raw_format": "REST JSON, offset pages"
+    },
+    {
+      "id": "sonar",
+      "label": "SonarQube",
+      "vendor_note": "Static code scanner",
+      "kind": "appsec",
+      "zone": "enterprise",
+      "api_location": "onprem",
+      "covers": [
+        "repos"
+      ],
+      "transport": "file",
+      "severity": "labels",
+      "severity_note": "BLOCKER/CRITICAL/MAJOR/MINOR labels",
+      "raw_format": "JSON report per project"
+    },
+    {
+      "id": "edr",
+      "label": "Agency EDR",
+      "vendor_note": "Endpoint inventory",
+      "kind": "edr",
+      "zone": "mgmt",
+      "api_location": "onprem"
+    },
+    {
+      "id": "cmdb",
+      "label": "Agency CMDB",
+      "vendor_note": "Owners (stale)",
+      "kind": "cmdb",
+      "zone": "enterprise",
+      "api_location": "onprem"
+    }
+  ],
+  "ticket_systems": [
+    {
+      "id": "itsm",
+      "label": "On-prem ITSM",
+      "zone": "enterprise",
+      "api_location": "onprem"
+    },
+    {
+      "id": "jira-dc",
+      "label": "Jira Data Center",
+      "zone": "enterprise",
+      "api_location": "onprem"
+    }
+  ],
+  "teams": [
+    {
+      "id": "App-Ops",
+      "works_in": "itsm",
+      "kind": "ops"
+    },
+    {
+      "id": "Identity",
+      "works_in": "itsm",
+      "kind": "ops"
+    },
+    {
+      "id": "Desktop-Support",
+      "works_in": "itsm",
+      "kind": "ops"
+    },
+    {
+      "id": "Facilities",
+      "works_in": "itsm",
+      "kind": "ops"
+    },
+    {
+      "id": "Dev-Team",
+      "works_in": "jira-dc",
+      "kind": "dev"
+    },
+    {
+      "id": "Platform-Team",
+      "works_in": "jira-dc",
+      "kind": "dev"
+    }
+  ],
+  "rules": {
+    "crown_jewel": {
+      "always": [
+        "critical"
+      ],
+      "if_internet_facing": [
+        "high"
+      ]
+    },
+    "p1_sla_days_ok": [
+      "7",
+      "15"
+    ]
+  }
+}

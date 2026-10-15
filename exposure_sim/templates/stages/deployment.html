@@ -1,0 +1,26 @@
+{% from "_macros.html" import check %}
+{% set model = answer.get('model') %}
+{% set targets = answer.get('targets', []) %}
+<div class="group">
+  <h2>Where does the platform run?</h2>
+  <div class="opts">
+    {{ check('model', 'saas_direct', models['saas_direct'], 'The vendor hosts it. It calls each tool\'s cloud API directly. Nothing installed on-site.', model == 'saas_direct', 'radio') }}
+    {{ check('model', 'saas_collector', models['saas_collector'], 'The vendor hosts it. A small collector inside the network reaches internal systems and reports out.', model == 'saas_collector', 'radio') }}
+    {{ check('model', 'onprem', models['onprem'], 'The customer installs and runs the whole platform inside their network.', model == 'onprem', 'radio') }}
+  </div>
+</div>
+<div class="group">
+  <h2>If you use a collector: what must it reach?</h2>
+  <p class="help">These systems sit inside the customer's network on the map. Check the API location on each box: some only look local.</p>
+  <div class="opts opts-2">
+  {% for item in local_systems %}
+    {{ check('targets', item.id, item.label, scenario.zone(item.zone).label ~ ' · API ' ~ ('on-prem' if item.api_location == 'onprem' else 'in the cloud'), item.id in targets) }}
+  {% endfor %}
+  </div>
+</div>
+<div class="group">
+  <h2>If you use a collector: which way does it connect?</h2>
+  <div class="opts">
+    {% for key, label in directions.items() %}{{ check('direction', key, label, '', answer.get('direction') == key, 'radio') }}{% endfor %}
+  </div>
+</div>

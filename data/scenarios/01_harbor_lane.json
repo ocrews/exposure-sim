@@ -1,0 +1,226 @@
+{
+  "schema_version": 1,
+  "id": "harbor-lane",
+  "name": "Harbor Lane Outfitters",
+  "difficulty": "Warm-up",
+  "tagline": "Online retailer. Everything lives in AWS or a SaaS tool.",
+  "briefing": [
+    "Harbor Lane sells outdoor gear online. About 400 employees, a small security team of three.",
+    "Workloads run in AWS. Code lives in hosted Git repos. Laptops are managed with CrowdStrike.",
+    "Dev and platform teams work in Jira Cloud. IT support works in ServiceNow, which also holds the CMDB.",
+    "The CISO's ask: 'I want to know what to fix first on the store and payments, and I want the right team to get the ticket.'"
+  ],
+  "constraints": {
+    "data_must_stay_onprem": false,
+    "reason": "No data residency restrictions. SaaS tools are already approved."
+  },
+  "zones": [
+    {
+      "id": "saas",
+      "label": "Internet · SaaS",
+      "kind": "saas"
+    },
+    {
+      "id": "aws",
+      "label": "AWS VPC",
+      "kind": "cloud"
+    },
+    {
+      "id": "office",
+      "label": "Office network",
+      "kind": "office"
+    }
+  ],
+  "collector_zone": "office",
+  "asset_groups": [
+    {
+      "id": "storefront",
+      "label": "Storefront web",
+      "zone": "aws",
+      "count": 24,
+      "platform": "linux",
+      "criticality": "high",
+      "internet_facing": true,
+      "owner": "Web-Platform"
+    },
+    {
+      "id": "payments",
+      "label": "Payments API",
+      "zone": "aws",
+      "count": 6,
+      "platform": "linux",
+      "criticality": "critical",
+      "internet_facing": true,
+      "owner": "Payments-Eng"
+    },
+    {
+      "id": "orderdb",
+      "label": "Order database",
+      "zone": "aws",
+      "count": 4,
+      "platform": "linux",
+      "criticality": "critical",
+      "internet_facing": false,
+      "owner": "Data-Platform"
+    },
+    {
+      "id": "eks",
+      "label": "EKS cluster",
+      "zone": "aws",
+      "count": 12,
+      "platform": "container",
+      "criticality": "high",
+      "internet_facing": false,
+      "owner": "Platform-Eng"
+    },
+    {
+      "id": "repos",
+      "label": "App repos",
+      "zone": "saas",
+      "count": 30,
+      "platform": "repo",
+      "criticality": "high",
+      "internet_facing": false,
+      "owner": "AppDev"
+    },
+    {
+      "id": "laptops",
+      "label": "Laptops",
+      "zone": "office",
+      "count": 180,
+      "platform": "mixed",
+      "criticality": "low",
+      "internet_facing": false,
+      "owner": "IT-Support"
+    },
+    {
+      "id": "iot",
+      "label": "Printers & IoT",
+      "zone": "office",
+      "count": 15,
+      "platform": "iot",
+      "criticality": "low",
+      "internet_facing": false,
+      "owner": "IT-Support",
+      "note": "Nothing scans these."
+    }
+  ],
+  "sources": [
+    {
+      "id": "wiz",
+      "label": "Wiz",
+      "vendor_note": "Agentless cloud scanner",
+      "kind": "cloud",
+      "zone": "saas",
+      "api_location": "saas",
+      "covers": [
+        "storefront",
+        "payments",
+        "orderdb",
+        "eks"
+      ],
+      "transport": "api_paginated",
+      "severity": "labels",
+      "severity_note": "CRITICAL/HIGH/MEDIUM/LOW labels",
+      "raw_format": "GraphQL JSON, cursor pages"
+    },
+    {
+      "id": "snyk",
+      "label": "Snyk",
+      "vendor_note": "Code & dependencies",
+      "kind": "appsec",
+      "zone": "saas",
+      "api_location": "saas",
+      "covers": [
+        "repos"
+      ],
+      "transport": "api_paginated",
+      "severity": "cvss",
+      "severity_note": "Ships a CVSS score per issue",
+      "raw_format": "REST JSON, page links"
+    },
+    {
+      "id": "falcon",
+      "label": "CrowdStrike",
+      "vendor_note": "EDR + endpoint vulns",
+      "kind": "endpoint",
+      "zone": "saas",
+      "api_location": "saas",
+      "covers": [
+        "laptops"
+      ],
+      "transport": "api_paginated",
+      "severity": "labels",
+      "severity_note": "Critical/High/Medium/Low labels",
+      "raw_format": "REST JSON, offset pages"
+    },
+    {
+      "id": "snow-cmdb",
+      "label": "ServiceNow CMDB",
+      "vendor_note": "Owners & criticality",
+      "kind": "cmdb",
+      "zone": "saas",
+      "api_location": "saas"
+    }
+  ],
+  "ticket_systems": [
+    {
+      "id": "jira-cloud",
+      "label": "Jira Cloud",
+      "zone": "saas",
+      "api_location": "saas"
+    },
+    {
+      "id": "snow",
+      "label": "ServiceNow ITSM",
+      "zone": "saas",
+      "api_location": "saas"
+    }
+  ],
+  "teams": [
+    {
+      "id": "Web-Platform",
+      "works_in": "jira-cloud",
+      "kind": "dev"
+    },
+    {
+      "id": "Payments-Eng",
+      "works_in": "jira-cloud",
+      "kind": "dev"
+    },
+    {
+      "id": "Data-Platform",
+      "works_in": "jira-cloud",
+      "kind": "dev"
+    },
+    {
+      "id": "Platform-Eng",
+      "works_in": "jira-cloud",
+      "kind": "dev"
+    },
+    {
+      "id": "AppDev",
+      "works_in": "jira-cloud",
+      "kind": "dev"
+    },
+    {
+      "id": "IT-Support",
+      "works_in": "snow",
+      "kind": "ops"
+    }
+  ],
+  "rules": {
+    "crown_jewel": {
+      "always": [
+        "critical"
+      ],
+      "if_internet_facing": [
+        "high"
+      ]
+    },
+    "p1_sla_days_ok": [
+      "7",
+      "15"
+    ]
+  }
+}

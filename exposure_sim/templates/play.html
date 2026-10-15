@@ -1,0 +1,86 @@
+{% extends "base.html" %}
+{% from "_macros.html" import map %}
+{% block title %}{{ stage.title }} · {{ scenario.name }} · exposure-sim{% endblock %}
+{% block main_class %}play{% endblock %}
+{% block crumbs %}
+<nav class="crumbs" aria-label="Progress">
+  <span class="crumb-org">{{ scenario.name }}</span>
+  <ol class="stepper">
+    {% for s in stages %}
+    {% set state = 'done' if progress.is_locked(s.id) else ('current' if s.id == stage.id else 'todo') %}
+    <li class="step step-{{ state }}{% if s.id == stage.id %} step-here{% endif %}">
+      {% if progress.is_locked(s.id) or s.id == stage.id %}
+      <a href="{{ url_for('game.stage', sid=scenario.id, stage_id=s.id) }}" {% if s.id == stage.id %}aria-current="step"{% endif %}><b>{{ loop.index }}</b><span>{{ s.title }}</span></a>
+      {% else %}<span><b>{{ loop.index }}</b><span>{{ s.title }}</span></span>{% endif %}
+    </li>
+    {% endfor %}
+  </ol>
+</nav>
+{% endblock %}
+
+{% block content %}
+<section class="map-col" aria-label="Network map">
+  {{ map(layout, scenario) }}
+</section>
+
+<section class="panel" aria-label="{{ stage.title }}">
+  <details class="briefing" {% if stage.order == 1 and not locked %}open{% endif %}>
+    <summary>Customer briefing · {{ scenario.difficulty }}</summary>
+    {% for p in scenario.briefing %}<p>{{ p }}</p>{% endfor %}
+    <p class="constraint"><b>Constraint:</b> {{ scenario.constraints.reason }}</p>
+  </details>
+
+  <header class="stage-head">
+    <p class="eyebrow">Stage {{ stage.order }} of {{ stages|length }}</p>
+    <h1>{{ stage.title }}</h1>
+    <p class="goal">{{ stage.goal }}</p>
+  </header>
+
+  {% if evaluation and not locked and evaluation.pushback %}
+  <div class="pushback" role="alert">
+    <h2>Before you lock this in</h2>
+    <ol>{% for q in evaluation.pushback %}<li>{{ q }}</li>{% endfor %}</ol>
+    <p class="pushback-foot">Change your answers below and check again, or lock in as is.</p>
+  </div>
+  {% endif %}
+
+  {% if locked and evaluation %}
+  <div class="result">
+    <div class="score">
+      <span class="score-num">{{ evaluation.score }}<small>/{{ evaluation.max_score }}</small></span>
+      <span class="meter" aria-hidden="true"><span style="width: {{ evaluation.percent }}%"></span></span>
+      <span class="score-pct">{{ evaluation.percent }}%</span>
+    </div>
+    <ul class="notes">
+      {% for n in evaluation.notes %}<li class="note note-{{ n.kind }}"><span class="note-tag">{{ {'good': 'Good', 'miss': 'Missed', 'tip': 'Tip'}[n.kind] }}</span>{{ n.text }}</li>{% endfor %}
+    </ul>
+    {% if evaluation.pushback %}
+    <details class="locked-pushback"><summary>Questions you locked in past ({{ evaluation.pushback|length }})</summary>
+      <ol>{% for q in evaluation.pushback %}<li>{{ q }}</li>{% endfor %}</ol></details>
+    {% endif %}
+    <div class="actions">
+      {% if next_stage %}<a class="btn btn-primary" href="{{ url_for('game.stage', sid=scenario.id, stage_id=next_stage.id) }}">Next: {{ next_stage.title }}</a>
+      {% else %}<a class="btn btn-primary" href="{{ url_for('game.debrief', sid=scenario.id) }}">See debrief</a>{% endif %}
+      <form method="post" action="{{ url_for('game.retry', sid=scenario.id, stage_id=stage.id) }}">
+        <button class="btn" type="submit">Redo this stage</button>
+      </form>
+    </div>
+    {% if next_stage %}<p class="hint">Redoing a stage also reopens the stages after it.</p>{% endif %}
+  </div>
+  {% endif %}
+
+  <form method="post" class="stage-form" id="stage-form">
+    <fieldset {% if locked %}disabled{% endif %}>
+      {% include stage.template %}
+    </fieldset>
+    {% if not locked %}
+    <div class="actions sticky-actions">
+      <button class="btn btn-primary" type="submit" name="action" value="check">Check my answer</button>
+      {% if evaluation and evaluation.pushback %}
+      <button class="btn" type="submit" name="action" value="lock">Lock in anyway</button>
+      {% endif %}
+    </div>
+    {% endif %}
+  </form>
+</section>
+{% endblock %}

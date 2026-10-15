@@ -1,0 +1,43 @@
+{% from "_macros.html" import check %}
+{% set keys = answer.get('keys', []) %}
+{% set routes = answer.get('routes', {}) %}
+<div class="group">
+  <h2>Group findings into one ticket when they share…</h2>
+  <p class="help">Pick every field that must match for two findings to land in the same ticket.</p>
+  <div class="opts opts-2">
+  {% for key, (label, desc) in group_keys.items() %}{{ check('keys', key, label, desc, key in keys) }}{% endfor %}
+  </div>
+</div>
+<div class="group">
+  <h2>Where each team's tickets go</h2>
+  <div class="table-scroll">
+    <table class="grid">
+      <thead><tr><th>Team</th><th>Owns</th><th>Ticket system</th></tr></thead>
+      <tbody>
+      {% for t in scenario.teams %}
+        <tr>
+          <td>{{ t.id }} <span class="kind">{{ t.kind }}</span></td>
+          <td class="muted">{{ scenario.asset_groups|selectattr('owner', 'equalto', t.id)|map(attribute='label')|join(', ') or '—' }}</td>
+          <td><select name="route_{{ t.id }}" aria-label="Ticket system for {{ t.id }}">
+            <option value="">Choose…</option>
+            {% for ts in scenario.ticket_systems %}<option value="{{ ts.id }}" {% if routes.get(t.id) == ts.id %}selected{% endif %}>{{ ts.label }}</option>{% endfor %}
+          </select></td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <p class="help">Check the briefing for which teams work where.</p>
+</div>
+<div class="group">
+  <h2>Findings on assets with no owner</h2>
+  <div class="opts">
+  {% for key, label in fallbacks.items() %}{{ check('fallback', key, label, '', answer.get('fallback') == key, 'radio') }}{% endfor %}
+  </div>
+</div>
+<div class="group">
+  <h2>Rollout</h2>
+  <div class="opts">
+  {% for key, label in rollouts.items() %}{{ check('rollout', key, label, '', answer.get('rollout') == key, 'radio') }}{% endfor %}
+  </div>
+</div>

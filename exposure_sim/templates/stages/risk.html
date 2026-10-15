@@ -1,0 +1,24 @@
+{% from "_macros.html" import check %}
+{% set chosen = answer.get('signals', []) %}
+<div class="group">
+  <h2>Signals in the risk score</h2>
+  <p class="help">Severity says how bad a flaw is. Risk adds how likely it is to be used against this org, and what it would hit.</p>
+  <div class="opts">
+  {% for key, (label, desc) in signals.items() %}{{ check('signals', key, label, desc, key in chosen) }}{% endfor %}
+  </div>
+</div>
+<div class="group">
+  <h2>How KEV findings are handled</h2>
+  <div class="opts">
+  {% for key, label in kev_policies.items() %}{{ check('kev_policy', key, label, '', answer.get('kev_policy') == key, 'radio') }}{% endfor %}
+  </div>
+</div>
+<div class="group">
+  <h2>P1 deadline</h2>
+  <label class="inline-field">Days to fix a P1
+    <select name="p1_sla">
+      <option value="">Choose…</option>
+      {% for d in slas %}<option value="{{ d }}" {% if answer.get('p1_sla') == d %}selected{% endif %}>{{ d }} days</option>{% endfor %}
+    </select>
+  </label>
+</div>

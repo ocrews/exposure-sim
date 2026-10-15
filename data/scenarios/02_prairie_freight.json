@@ -1,0 +1,293 @@
+{
+  "schema_version": 1,
+  "id": "prairie-freight",
+  "name": "Prairie Freight Co.",
+  "difficulty": "Hybrid",
+  "tagline": "Regional logistics company. Half on-prem data center, half AWS.",
+  "briefing": [
+    "Prairie Freight runs billing, shipment tracking, and Active Directory in its own data center, and its customer portal in AWS.",
+    "Tenable SC scans the Linux servers. A Qualys scanner appliance scans the Windows side and uploads results to Qualys's cloud.",
+    "Dev and platform teams work in Jira Data Center, which is internal and not reachable from the internet. Operations teams work in ServiceNow (SaaS).",
+    "The CMDB is decent but incomplete. Security policy allows approved SaaS, with outbound 443 only through an egress proxy and no inbound firewall rules."
+  ],
+  "constraints": {
+    "data_must_stay_onprem": false,
+    "reason": "SaaS is allowed if it passes vendor review. No inbound connections from the internet."
+  },
+  "zones": [
+    {
+      "id": "saas",
+      "label": "Internet · SaaS",
+      "kind": "saas"
+    },
+    {
+      "id": "aws",
+      "label": "AWS VPC",
+      "kind": "cloud"
+    },
+    {
+      "id": "dmz",
+      "label": "On-prem DMZ",
+      "kind": "dmz"
+    },
+    {
+      "id": "servers",
+      "label": "On-prem server VLAN",
+      "kind": "servers"
+    },
+    {
+      "id": "mgmt",
+      "label": "On-prem mgmt VLAN",
+      "kind": "mgmt"
+    }
+  ],
+  "collector_zone": "mgmt",
+  "asset_groups": [
+    {
+      "id": "portal",
+      "label": "Customer portal",
+      "zone": "aws",
+      "count": 8,
+      "platform": "linux",
+      "criticality": "high",
+      "internet_facing": true,
+      "owner": "Web-Platform"
+    },
+    {
+      "id": "k8s",
+      "label": "K8s nodes",
+      "zone": "aws",
+      "count": 6,
+      "platform": "container",
+      "criticality": "medium",
+      "internet_facing": false,
+      "owner": "Cloud-Platform"
+    },
+    {
+      "id": "repos",
+      "label": "App repos",
+      "zone": "saas",
+      "count": 14,
+      "platform": "repo",
+      "criticality": "medium",
+      "internet_facing": false,
+      "owner": "AppDev"
+    },
+    {
+      "id": "ftp",
+      "label": "Legacy FTP",
+      "zone": "dmz",
+      "count": 1,
+      "platform": "linux",
+      "criticality": "medium",
+      "internet_facing": true,
+      "owner": null,
+      "note": "Not in the CMDB. Nobody claims it."
+    },
+    {
+      "id": "billing",
+      "label": "Billing DB",
+      "zone": "servers",
+      "count": 4,
+      "platform": "linux",
+      "criticality": "critical",
+      "internet_facing": false,
+      "owner": "Data-Services"
+    },
+    {
+      "id": "tracking",
+      "label": "Shipment tracking",
+      "zone": "servers",
+      "count": 10,
+      "platform": "linux",
+      "criticality": "medium",
+      "internet_facing": false,
+      "owner": "Linux-Ops"
+    },
+    {
+      "id": "dcs",
+      "label": "Domain controllers",
+      "zone": "servers",
+      "count": 3,
+      "platform": "windows",
+      "criticality": "critical",
+      "internet_facing": false,
+      "owner": "Identity"
+    },
+    {
+      "id": "files",
+      "label": "File servers",
+      "zone": "servers",
+      "count": 5,
+      "platform": "windows",
+      "criticality": "low",
+      "internet_facing": false,
+      "owner": "Windows-Ops"
+    },
+    {
+      "id": "build",
+      "label": "Build agents",
+      "zone": "servers",
+      "count": 12,
+      "platform": "linux",
+      "criticality": "medium",
+      "internet_facing": false,
+      "owner": "DevOps",
+      "note": "CrowdStrike sees them. No scanner does."
+    }
+  ],
+  "sources": [
+    {
+      "id": "tenable",
+      "label": "Tenable SC",
+      "vendor_note": "On-prem infra scanner",
+      "kind": "infra",
+      "zone": "mgmt",
+      "api_location": "onprem",
+      "covers": [
+        "billing",
+        "tracking"
+      ],
+      "transport": "api_paginated",
+      "severity": "native",
+      "severity_note": "Native 0–4 severity",
+      "raw_format": "REST JSON, start/end offsets"
+    },
+    {
+      "id": "qualys",
+      "label": "Qualys",
+      "vendor_note": "Scanner appliance on-prem",
+      "kind": "infra",
+      "zone": "mgmt",
+      "api_location": "saas",
+      "covers": [
+        "dcs",
+        "files",
+        "ftp",
+        "tracking"
+      ],
+      "transport": "file",
+      "severity": "native",
+      "severity_note": "Native 1–5 severity",
+      "raw_format": "CSV report export",
+      "note": "The appliance uploads to Qualys's cloud. The API is there, not on-prem."
+    },
+    {
+      "id": "wiz",
+      "label": "Wiz",
+      "vendor_note": "Agentless cloud scanner",
+      "kind": "cloud",
+      "zone": "saas",
+      "api_location": "saas",
+      "covers": [
+        "portal",
+        "k8s"
+      ],
+      "transport": "api_paginated",
+      "severity": "labels",
+      "severity_note": "CRITICAL/HIGH/MEDIUM/LOW labels",
+      "raw_format": "GraphQL JSON, cursor pages"
+    },
+    {
+      "id": "snyk",
+      "label": "Snyk",
+      "vendor_note": "Code & dependencies",
+      "kind": "appsec",
+      "zone": "saas",
+      "api_location": "saas",
+      "covers": [
+        "repos"
+      ],
+      "transport": "api_paginated",
+      "severity": "cvss",
+      "severity_note": "Ships a CVSS score per issue",
+      "raw_format": "REST JSON, page links"
+    },
+    {
+      "id": "falcon",
+      "label": "CrowdStrike",
+      "vendor_note": "EDR inventory only",
+      "kind": "edr",
+      "zone": "saas",
+      "api_location": "saas"
+    },
+    {
+      "id": "snow-cmdb",
+      "label": "ServiceNow CMDB",
+      "vendor_note": "Owners & criticality",
+      "kind": "cmdb",
+      "zone": "saas",
+      "api_location": "saas"
+    }
+  ],
+  "ticket_systems": [
+    {
+      "id": "snow",
+      "label": "ServiceNow ITSM",
+      "zone": "saas",
+      "api_location": "saas"
+    },
+    {
+      "id": "jira-dc",
+      "label": "Jira Data Center",
+      "zone": "servers",
+      "api_location": "onprem"
+    }
+  ],
+  "teams": [
+    {
+      "id": "Web-Platform",
+      "works_in": "jira-dc",
+      "kind": "dev"
+    },
+    {
+      "id": "Cloud-Platform",
+      "works_in": "jira-dc",
+      "kind": "dev"
+    },
+    {
+      "id": "AppDev",
+      "works_in": "jira-dc",
+      "kind": "dev"
+    },
+    {
+      "id": "DevOps",
+      "works_in": "jira-dc",
+      "kind": "dev"
+    },
+    {
+      "id": "Data-Services",
+      "works_in": "snow",
+      "kind": "ops"
+    },
+    {
+      "id": "Linux-Ops",
+      "works_in": "snow",
+      "kind": "ops"
+    },
+    {
+      "id": "Identity",
+      "works_in": "snow",
+      "kind": "ops"
+    },
+    {
+      "id": "Windows-Ops",
+      "works_in": "snow",
+      "kind": "ops"
+    }
+  ],
+  "rules": {
+    "crown_jewel": {
+      "always": [
+        "critical"
+      ],
+      "if_internet_facing": [
+        "high"
+      ]
+    },
+    "p1_sla_days_ok": [
+      "7",
+      "15"
+    ]
+  }
+}

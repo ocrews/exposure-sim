@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% from "_macros.html" import map %}
+{% block title %}Debrief · {{ scenario.name }} · exposure-sim{% endblock %}
+{% block content %}
+<section class="intro">
+  <p class="eyebrow">Debrief · {{ scenario.difficulty }}</p>
+  <h1>{{ scenario.name }}</h1>
+  {% if complete %}
+  <p class="lead">You scored <b>{{ total }} of {{ maximum }}</b> ({{ (100 * total / maximum)|round|int if maximum else 0 }}%). Below is your architecture laid over the customer's network, each stage's grade, and the code your class design produces.</p>
+  {% else %}
+  <p class="lead">{{ rows|length }} of {{ stages|length }} stages locked so far. <a href="{{ url_for('game.play', sid=scenario.id) }}">Continue</a>.</p>
+  {% endif %}
+</section>
+
+{{ map(layout, scenario) }}
+
+<section class="debrief-rows">
+  <h2>Stage by stage</h2>
+  <div class="table-scroll">
+  <table class="grid">
+    <thead><tr><th>Stage</th><th class="num">Score</th><th>What to work on</th></tr></thead>
+    <tbody>
+    {% for stage, ev in rows %}
+      <tr>
+        <td><a href="{{ url_for('game.stage', sid=scenario.id, stage_id=stage.id) }}">{{ stage.title }}</a></td>
+        <td class="num">{{ ev.score }}/{{ ev.max_score }}</td>
+        <td>{% set misses = ev.notes|selectattr('kind', 'equalto', 'miss')|list %}
+          {% if misses %}<ul class="tight">{% for n in misses %}<li>{{ n.text }}</li>{% endfor %}</ul>{% else %}<span class="ok">Nothing missed.</span>{% endif %}</td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  </div>
+</section>
+
+{% if code %}
+<section class="group">
+  <h2>Your integration layer</h2>
+  <pre class="code" tabindex="0">{% for line in code.splitlines() %}{% if 'REVIEW' in line %}<span class="rv">{{ line }}</span>{% elif line.strip().startswith('#') %}<span class="cm">{{ line }}</span>{% else %}{{ line }}{% endif %}
+{% endfor %}</pre>
+</section>
+{% endif %}
+
+<div class="actions">
+  <a class="btn btn-primary" href="{{ url_for('game.index') }}">Pick another org</a>
+  <form method="post" action="{{ url_for('game.reset', sid=scenario.id) }}"><button class="btn" type="submit">Play this one again</button></form>
+</div>
+{% endblock %}

@@ -1,0 +1,7 @@
+{# Just the map, used by scripts/check_map.py to measure labels. #}
+{% from "_macros.html" import map %}
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css', _external=False) }}">
+</head><body>{{ map(layout, scenario) }}</body></html>

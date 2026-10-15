@@ -1,0 +1,12 @@
+{% from "_macros.html" import check %}
+{% set picks = answer.get('picks', []) %}
+<div class="group">
+  <h2>Wave 1 asset groups</h2>
+  <p class="help">Onboard a small set first and prove the risk ranking there. Pick what would hurt most if breached.</p>
+  <div class="opts opts-2">
+  {% for g in scenario.asset_groups %}
+    {% set desc = g.criticality ~ ' criticality · ' ~ ('internet-facing' if g.internet_facing else 'internal') ~ ' · owner: ' ~ (g.owner or 'none') %}
+    {{ check('picks', g.id, g.label, desc, g.id in picks) }}
+  {% endfor %}
+  </div>
+</div>

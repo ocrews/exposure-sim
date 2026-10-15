@@ -1,0 +1,55 @@
+{# Shared pieces: the network map and form controls. #}
+
+{% macro map(layout, scenario) %}
+<figure class="map">
+  <div class="map-scroll">
+    <svg viewBox="0 0 {{ layout.width }} {{ layout.height }}" role="img"
+         aria-label="Network map of {{ scenario.name }}: {{ layout.zones|length }} zones, {{ layout.nodes|length }} systems">
+      <defs>
+        <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+          <path d="M0,0 L10,5 L0,10 z" class="arrowhead"/>
+        </marker>
+      </defs>
+      {% for z in layout.zones %}
+      <g class="zone zone-{{ z.kind }}">
+        <rect x="{{ z.x }}" y="{{ z.y }}" width="{{ z.w }}" height="{{ z.h }}" rx="6"/>
+        <text x="{{ z.x + 14 }}" y="{{ z.y + 18 }}" class="zone-label">{{ z.label }}</text>
+      </g>
+      {% endfor %}
+      {% for e in layout.edges %}
+      <path d="{{ e.path }}" class="edge edge-{{ e.kind }}" data-src="{{ e.src }}" data-dst="{{ e.dst }}"
+            {% if e.kind == 'uplink' %}marker-start="url(#arrow)"{% endif %}/>
+      {% if e.label %}<text x="{{ e.lx }}" y="{{ e.ly }}" class="edge-label">{{ e.label }}</text>{% endif %}
+      {% endfor %}
+      {% for n in layout.nodes %}
+      <g class="node node-{{ n.kind }} {{ n.classes|join(' ') }}" data-id="{{ n.id }}" tabindex="0">
+        <title>{{ n.title }}{% for l in n.lines %} · {{ l }}{% endfor %}</title>
+        <rect x="{{ n.x }}" y="{{ n.y }}" width="{{ n.w }}" height="{{ n.h }}" rx="5"/>
+        <text x="{{ n.x + 10 }}" y="{{ n.y + 20 }}" class="n-title">{{ n.title }}</text>
+        {% if n.lines %}<text x="{{ n.x + 10 }}" y="{{ n.y + 38 }}" class="n-line">{{ n.lines[0] }}</text>{% endif %}
+        {% if n.lines|length > 1 %}<text x="{{ n.x + 10 }}" y="{{ n.y + 55 }}" class="n-line">{{ n.lines[1] }}</text>{% endif %}
+        {% set badge_y = n.y + 55 if n.kind == 'source' else n.y + 38 %}
+        {% if n.badges %}<text x="{{ n.x + n.w - 9 }}" y="{{ badge_y }}" text-anchor="end" class="n-badge">{{ n.badges|join(' · ') }}</text>{% endif %}
+        {% if n.tags %}<text x="{{ n.x + 10 }}" y="{{ n.y + 70 }}" class="n-tags">{% for t in n.tags %}<tspan class="tag-{{ t|replace(' ', '-') }}">{{ t }}</tspan>{% if not loop.last %}<tspan class="tag-sep"> · </tspan>{% endif %}{% endfor %}</text>{% endif %}
+      </g>
+      {% endfor %}
+    </svg>
+  </div>
+  <figcaption class="legend">
+    <span><i class="lg lg-coverage"></i>scanner covers</span>
+    <span><i class="lg lg-link"></i>platform API link</span>
+    <span><i class="lg lg-relay"></i>collector reaches (LAN)</span>
+    <span><i class="lg lg-uplink"></i>collector dials out</span>
+    <span><i class="lg lg-gap"></i>coverage gap</span>
+    <span><i class="lg lg-jewel"></i>wave 1</span>
+    <span class="legend-hint">Hover or tap a scanner to trace what it covers.</span>
+  </figcaption>
+</figure>
+{% endmacro %}
+
+{% macro check(name, value, label, desc='', checked=False, kind='checkbox') %}
+<label class="opt">
+  <input type="{{ kind }}" name="{{ name }}" value="{{ value }}" {% if checked %}checked{% endif %}>
+  <span class="opt-body"><span class="opt-label">{{ label }}</span>{% if desc %}<span class="opt-desc">{{ desc }}</span>{% endif %}</span>
+</label>
+{% endmacro %}
