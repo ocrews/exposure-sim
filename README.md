@@ -42,7 +42,7 @@ restarts (otherwise a new random key is generated on each start).
 
 ```bash
 pip install -r requirements-dev.txt
-python3 -m pytest -q                  # 116 tests: scenarios, every stage, codegen, map layout, HTTP, full playthroughs
+python3 -m pytest -q                  # 118 tests: scenarios, every stage, codegen, map layout, HTTP, full playthroughs
 python3 scripts/check_map.py          # renders every map in headless Chromium and fails if any label overflows
 ```
 
@@ -94,6 +94,10 @@ Design choices worth knowing if you extend it:
 
 Scenario files carry `schema_version`. When the format changes, bump `CURRENT_SCHEMA` in
 `scenarios.py` and add an upgrade step so older files keep loading.
+
+## Hosting it on a Raspberry Pi
+
+See [`deploy/README.md`](deploy/README.md): one command hardens a fresh Pi and runs the game as a sandboxed systemd service.
 
 ## Before putting it on the internet
 
