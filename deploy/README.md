@@ -27,9 +27,10 @@ Imager), and the Pi on your home network.
 firewall step ever locks you out, that session stays connected and you can run
 `sudo ufw disable` from it.
 
-Pi · user `ocrews` · ⚠️ needs sudo:
+Pi · user `ocrews` · ⚠️ needs sudo. Raspberry Pi OS Lite doesn't include git, so install it first:
 
 ```bash
+sudo apt update && sudo apt install -y git
 git clone https://github.com/ocrews/exposure-sim && cd exposure-sim
 sudo bash deploy/setup-pi.sh
 ```
