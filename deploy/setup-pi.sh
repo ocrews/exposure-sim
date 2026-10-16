@@ -313,7 +313,8 @@ step "9. Final checks"
 # check "pass message" "fail message" command...   (runs the command; passes if it succeeds)
 check() { local ok_msg=$1 bad_msg=$2; shift 2; if "$@"; then pass "$ok_msg"; else fail "$bad_msg"; fi; }
 default_deny()  { grep -q 'Default: deny (incoming)' <<<"$(ufw status verbose)"; }
-one_ssh_rule()  { [[ $(grep -c "22/tcp.*ALLOW IN.*${LAN_CIDR}" <<<"$(ufw status)") -eq 1 ]]; }
+# Plain 'ufw status' prints "ALLOW" ('verbose' prints "ALLOW IN"); anchor on the port so 2222/tcp can't match.
+one_ssh_rule()  { [[ $(grep -cE "^22/tcp +ALLOW( IN)? +${LAN_CIDR//./\\.}( |$)" <<<"$(ufw status)") -eq 1 ]]; }
 no_v6_allow()   { ! grep -q '(v6).*ALLOW' <<<"$(ufw status)"; }
 no_login()      { [[ $(getent passwd "$APP_USER" | cut -d: -f7) == /usr/sbin/nologin ]]; }
 runs_as_app()   { [[ $(systemctl show -p User --value "$APP") == "$APP_USER" ]]; }
