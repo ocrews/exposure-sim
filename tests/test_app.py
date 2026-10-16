@@ -110,3 +110,15 @@ def test_session_store_isolated_per_scenario():
     store.save("one", a)
     assert store.load("two").locked == []
     assert store.load("one").locked == ["integrations"]
+
+
+def test_warns_when_secret_missing(monkeypatch, caplog):
+    monkeypatch.delenv("EXPOSURE_SIM_SECRET", raising=False)
+    with caplog.at_level("WARNING"):
+        create_app()
+    assert any("EXPOSURE_SIM_SECRET is not set" in r.message for r in caplog.records)
+
+
+def test_secret_from_environment(monkeypatch):
+    monkeypatch.setenv("EXPOSURE_SIM_SECRET", "abc123")
+    assert create_app().config["SECRET_KEY"] == "abc123"
